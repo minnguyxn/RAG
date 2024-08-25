@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Load File & Text Inputs</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+        }
+        textarea {
+            width: 100%;
+            height: 100px;
+            margin: 10px 0;
+            padding: 10px;
+            font-size: 16px;
+        }
+        #textInput2 {
+            width: 100%;
+            height: 50px; /* Giảm chiều cao của ô câu hỏi */
+            margin: 20px 0;
+            padding: 10px;
+            font-size: 16px;
+        }
+        #output {
+            background-color: #f0f0f0;
+            color: #333;
+        }
+    </style>
+    <!-- Thêm thư viện TensorFlow.js -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+</head>
+<body>
+
+    <h1>Nhập văn bản hoặc chọn file</h1>
+
+    <!-- Ô nhập văn bản 1 -->
+    <label for="textInput1">Nội dung văn bản muốn truy vấn:</label>
+    <textarea id="textInput1" placeholder="Nhập nội dung hoặc chọn file..."></textarea>
+
+    <!-- Nút chọn file -->
+    <label for="fileInput">Hoặc chọn file:</label>
+    <input type="file" id="fileInput">
+
+    <!-- Ô nhập văn bản 2 (Câu hỏi muốn truy vấn) -->
+    <label for="textInput2">Câu hỏi muốn truy vấn:</label>
+    <textarea id="textInput2" placeholder="Nhập câu hỏi..."></textarea>
+
+    <!-- Ô để hiển thị kết quả -->
+    <label for="output">Kết quả:</label>
+    <textarea id="output" readonly placeholder="Kết quả sẽ hiển thị ở đây..."></textarea>
+
+    <script>
+        // Lấy các phần tử HTML
+        const textInput1 = document.getElementById('textInput1');
+        const textInput2 = document.getElementById('textInput2');
+        const fileInput = document.getElementById('fileInput');
+        const output = document.getElementById('output');
+        let model;
+
+        // Load mô hình TensorFlow.js khi trang được tải
+        window.onload = async function() {
+            // Thay thế đường dẫn này bằng đường dẫn tới mô hình của bạn
+            const modelUrl = 'http://localhost:8000/model.json';
+            const model = await tf.loadLayersModel(modelUrl);
+            console.log('Mô hình đã được tải');
+        };
+
+        // Sự kiện khi người dùng chọn file
+        fileInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    textInput1.value = e.target.result; // Điền nội dung file vào ô 1
+                };
+                reader.readAsText(file);
+            }
+        });
+
+        // Giả sử có một hàm xử lý truy vấn khi cả hai trường đã được điền
+        function processQuery() {
+            const content = textInput1.value;
+            const question = textInput2.value;
+            
+            // Thực hiện xử lý truy vấn ở đây, ví dụ bằng cách gọi API hoặc tính toán trực tiếp
+            // Đoạn mã này chỉ là ví dụ để hiển thị kết quả
+            if (model && tokenizer && context && question) {
+        // Tokenize input
+        const inputs = tokenizer.encode(question, context);
+        const inputIds = inputs.input_ids;
+        
+        // Tạo tensor từ input IDs
+        const inputTensor = tf.tensor([inputIds], [1, inputIds.length], 'int32');
+
+        // Tạo dự đoán
+        const outputs = model.predict({input_ids: inputTensor});
+
+        // Lấy start và end logits
+        const start_logits = outputs.start_logits.arraySync()[0];
+        const end_logits = outputs.end_logits.arraySync()[0];
+
+        // Xác định vị trí bắt đầu và kết thúc của câu trả lời
+        const start_index = start_logits.indexOf(Math.max(...start_logits));
+        const end_index = end_logits.indexOf(Math.max(...end_logits)) + 1;
+
+        // Decode câu trả lời từ tokens
+        const answerTokens = inputIds.slice(start_index, end_index);
+        const answer = tokenizer.decode(answerTokens, { skip_special_tokens: true });
+
+        // Hiển thị kết quả
+        output.value = `Câu trả lời: ${answer}`;
+    }
+        }
+
+        // Gọi hàm xử lý khi có thay đổi trong textInput1 hoặc textInput2
+        textInput1.addEventListener('input', processQuery);
+        textInput2.addEventListener('input', processQuery);
+
+    </script>
+
+</body>
+</html>
