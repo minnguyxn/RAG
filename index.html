@@ -62,8 +62,7 @@
         // Load mô hình TensorFlow.js khi trang được tải
         window.onload = async function() {
             // Thay thế đường dẫn này bằng đường dẫn tới mô hình của bạn
-            const modelUrl = 'http://localhost:8000/model.json';
-            const model = await tf.loadLayersModel(modelUrl);
+            const model = await tf.loadLayersModel('tensorflow-js/model.json');
             console.log('Mô hình đã được tải');
         };
 
